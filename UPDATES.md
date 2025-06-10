@@ -45,3 +45,30 @@ Rewrote the legacy in-memory rate limiter using Redis to ensure scalability, per
 
 - Proper error messages improve debugging and API consumer experience.
 - Cleaner, extensible code allows adding advanced role-based logic in the future (e.g., hierarchical roles, permissions).
+
+--------------------------------------------------------------------------------------------
+
+### ✅ HttpExceptionFilter Improvements
+
+**Original Issues:**
+- Did not differentiate between client-side and server-side errors in logs.
+- Could leak sensitive stack traces or internal exception details in responses.
+- Error formatting was inconsistent and simplistic.
+- Lacked clear, structured logging for debugging.
+
+**Fixes Implemented:**
+- Added checks to parse both string and object responses from `exception.getResponse()`.
+- Used `warn` for 4xx client errors and `error` for 5xx server errors in logging.
+- Ensured the error response structure is clean, consistent, and contains:
+  - `success`
+  - `statusCode`
+  - `timestamp`
+  - `path`
+  - `message`
+- Prevented exposure of stack traces in responses.
+
+**Benefits:**
+- Developers and DevOps can quickly identify and differentiate error types from logs.
+- Safer, consistent API responses for frontend consumers.
+- Clean separation of concerns: logs are verbose, responses are minimal.
+
