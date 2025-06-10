@@ -19,3 +19,29 @@ Rewrote the legacy in-memory rate limiter using Redis to ensure scalability, per
 - ✅ Sanitized error messages, removed internal details and raw IPs
 - ✅ Centralized config and scalable logic usable across services
 - ✅ Final code supports production-grade rate limiting in multi-instance environments
+
+--------------------------------------------------------------------------------------------
+
+
+## ✅ RolesGuard Enhancements
+
+### 📄 File: `src/common/guards/role.guard.ts`
+
+### ❌ Problems with Original Code
+
+- No validation if `user` or `user.role` is undefined.
+- Returns `false` silently — leads to ambiguous access denial.
+- No logging or exceptions for unauthorized access.
+- No extensibility or helpful error messages.
+
+### ✅ Fixes Applied
+
+- Added `ForbiddenException` with meaningful messages for missing or unauthorized roles.
+- Added type annotation for request (`Request` from Express).
+- Enhanced logic to allow graceful fallback if roles are not required.
+- Improved readability and guard structure.
+
+### 🔐 Why This Matters
+
+- Proper error messages improve debugging and API consumer experience.
+- Cleaner, extensible code allows adding advanced role-based logic in the future (e.g., hierarchical roles, permissions).
