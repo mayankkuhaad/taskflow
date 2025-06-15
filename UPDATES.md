@@ -224,3 +224,89 @@ Used DTO validation and transformation with ValidationPipe.
 Services are now deterministic and easily testable.
 
 Clean separation between controller logic (access control, formatting) and service logic (persistence, validation).
+
+
+### Tasks Module Enhancements
+🧠 Summary
+The TasksModule was significantly enhanced to support robust task management, filtering, scheduling, and queue-based processing. Refactors focused on clean architecture, validation, rate limiting, and scalable persistence using Redis and BullMQ.
+
+📌 Key Enhancements
+📝 Create Task (POST /tasks)
+✅ Validates against duplicate tasks with same title and due date for a user.
+
+✅ Parses ISO strings into Date objects for dueDate.
+
+✅ Automatically enqueues tasks to BullMQ (taskQueue) with deduplication (jobId: task-{id}) and cleanup policies (removeOnComplete, removeOnFail).
+
+✅ Secure user association via userId.
+
+📋 Get Tasks with Filters (GET /tasks)
+✅ Supports filters: status, priority, search, dueDateBefore, dueDateAfter.
+
+✅ Implements pagination with page and limit.
+
+✅ Ensures tasks are scoped to the authenticated user.
+
+✅ Uses createQueryBuilder for advanced SQL filtering and efficient querying.
+
+✅ Includes relation to assignee (if exists) using leftJoinAndSelect.
+
+🔄 Update Task Status (PATCH /tasks/:id/status)
+✅ Allows authenticated users to update status of their own tasks.
+
+✅ Enforces ownership check before allowing updates.
+
+✅ Throws appropriate exceptions (NotFoundException, ForbiddenException) for invalid access.
+
+✅ Clean response structure using TaskResponseDto.
+
+✅ DTO Validation
+All DTOs (CreateTaskDto, UpdateTaskStatusDto, TaskFilterDto) use class-validator and class-transformer.
+
+ValidationPipe ensures safe transformation and readable error feedback to the client.
+
+📦 Task Queue Integration (BullMQ)
+✅ Tasks are queued asynchronously for background processing.
+
+✅ Deduplicates jobs using Redis jobId.
+
+✅ Cleans up completed jobs automatically.
+
+✅ Supports retry strategy for failed jobs (removeOnFail: { count: 3 }).
+
+⚙️ Redis-Based Rate Limiting
+✅ @RateLimit() decorator used on sensitive endpoints.
+
+✅ Implements atomic Redis operations (INCR, EXPIRE) for accurate throttling.
+
+✅ SHA256-hashes IPs to protect user privacy.
+
+✅ Clean exception thrown (TooManyRequestsException) with safe message.
+
+🔐 Access Control & Ownership
+All task actions are protected by JwtAuthGuard.
+
+Task updates/deletion are restricted to the task owner only.
+
+Admin-level logic is ready to be added if required later.
+
+🧼 Response Formatting & DTOs
+All endpoints return consistent structure:
+
+json
+Copy
+Edit
+{
+  "success": true,
+  "message": "Task status updated successfully",
+  "data": { ... }
+}
+DTOs exclude sensitive or unnecessary internal fields.
+
+toTaskResponseDto() used to format task entities cleanly.
+
+✅ Exception Handling
+Used global HttpExceptionFilter for consistent error responses.
+
+Custom error messages used instead of raw database errors or stack traces.
+
