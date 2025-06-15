@@ -1,6 +1,6 @@
 import { ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, Not, Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -11,6 +11,17 @@ import { TaskFilterDto } from './dto/task-filter.dto';
 import { User } from '@modules/users/entities/user.entity';
 import { TaskPriority } from './enums/task-priority.enum';
 import { In } from 'typeorm';
+
+const SYSTEM_USER: User = {
+  id: 'system',
+  email: 'system@tasks.com',
+  role: 'admin',
+  name: 'System User',
+  password: '',
+  tasks: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
 @Injectable()
 export class TasksService {
@@ -291,5 +302,21 @@ async batchProcess(
 }
 
 
+async findOverdueTasks() {
+  return this.tasksRepository.find({
+    where: {
+      dueDate: LessThan(new Date()),
+      status: Not(TaskStatus.COMPLETED),
+    },
+  });
+}
 
+async notifyAssignee(task: Task): Promise<void> {
+console.log(`📨 Notifying assignee (${task.user.email}) for task "${task.title}"`);
+
+}
+
+async findTasksByIds(ids: string[]): Promise<Task[]> {
+  return this.tasksRepository.findBy({ id: In(ids) });
+}
 }
