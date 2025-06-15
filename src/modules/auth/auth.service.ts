@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -16,28 +16,18 @@ export class AuthService {
     const { email, password } = loginDto;
 
     const user = await this.usersService.findByEmail(email);
-    
-    if (!user) {
-      throw new UnauthorizedException('Invalid email');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    const passwordValid = await bcrypt.compare(password, user.password);
-    
-    if (!passwordValid) {
-      throw new UnauthorizedException('Invalid password');
-    }
-
-    const payload = { 
-      sub: user.id, 
-      email: user.email, 
-      role: user.role
-    };
+    const token = this.generateToken(user);
 
     return {
-      access_token: this.jwtService.sign(payload),
+      token,
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
       },
     };
@@ -47,40 +37,40 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
 
     if (existingUser) {
-      throw new UnauthorizedException('Email already exists');
+      throw new ConflictException('Email already exists');
     }
 
     const user = await this.usersService.create(registerDto);
-
-    const token = this.generateToken(user.id);
+    const token = this.generateToken(user);
 
     return {
+      token,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
       },
-      token,
     };
   }
 
-  private generateToken(userId: string) {
-    const payload = { sub: userId };
+  private generateToken(user: { id: string; email?: string; role?: string; name?: string }) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    };
+
     return this.jwtService.sign(payload);
   }
 
   async validateUser(userId: string): Promise<any> {
-    const user = await this.usersService.findOne(userId);
-    
-    if (!user) {
-      return null;
-    }
-    
-    return user;
+    return await this.usersService.findOne(userId);
   }
 
   async validateUserRoles(userId: string, requiredRoles: string[]): Promise<boolean> {
-    return true;
+    const user = await this.usersService.findOne(userId);
+    return user ? requiredRoles.includes(user.role) : false;
   }
-} 
+}

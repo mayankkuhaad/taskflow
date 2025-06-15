@@ -150,6 +150,41 @@ Centralizes Redis logic, easing future enhancements (e.g., compression, metrics)
 
 --------------------------------------------------------------------------------------------
 
+### Auth Module Enhancements
+
+✅ Features Implemented
+JWT-based authentication using @nestjs/jwt, Passport, and JwtStrategy.
+
+Secure password storage and verification via bcrypt.
+
+Clean login and registration flows with structured responses.
+
+Added role-based payloads in JWT for future access control.
+
+Fully integrated with UsersModule for user persistence and lookup.
+
+🔐 Security Considerations
+Centralized token configuration (JWT_SECRET, JWT_EXPIRATION) via ConfigService.
+
+Guards and strategies prevent access to unauthorized or inactive users.
+
+Passwords never returned in responses, and are securely hashed before storage.
+
+Authenticated users can only act within the bounds of their assigned role.
+
+⚠️ Known/Resolved Issues
+❗ Consistency in token naming (token vs access_token) standardized
+
+❗ Generalized login error message to prevent information disclosure
+
+✅ validateUserRoles() function implemented with proper role checks
+
+✅ Strategy handles token validation and gracefully throws UnauthorizedException if the user is deleted or inactive
+
+
+--------------------------------------------------------------------------------------------
+
+
 ### Users Module Enhancements
 
 ✅ Major Improvements
