@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { TestingController } from './testing.controller';
 import { Task } from '@modules/tasks/entities/task.entity';
 import { OverdueTasksService } from '@queues/scheduled-tasks/overdue-tasks.service';
+import { CacheService } from '@common/services/cache.service';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { OverdueTasksService } from '@queues/scheduled-tasks/overdue-tasks.servi
       name: 'task-processing',
     }),
   ],
-  controllers: [TestingController],
-  providers: [OverdueTasksService],
+  controllers: [TestingController ],
+  providers: [OverdueTasksService,CacheService],
 })
 export class TestingModule {}

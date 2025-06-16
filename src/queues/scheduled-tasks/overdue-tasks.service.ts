@@ -6,22 +6,34 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Task } from '../../modules/tasks/entities/task.entity';
 import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
+import { CacheService } from '../../common/services/cache.service';
 
 @Injectable()
 export class OverdueTasksService {
   private readonly logger = new Logger(OverdueTasksService.name);
+  private readonly cacheKey = 'overdue-tasks';
 
   constructor(
     @InjectQueue('task-processing')
     private taskQueue: Queue,
     @InjectRepository(Task)
     private tasksRepository: Repository<Task>,
+    private readonly cacheService: CacheService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueTasks() {
     this.logger.debug('⏰ Checking for overdue tasks...');
 
+    // Step 1: Try cache
+    const cached = await this.cacheService.get<Task[]>(this.cacheKey);
+    if (cached?.length) {
+      this.logger.log(`⚠️ Found ${cached.length} overdue tasks (from cache).`);
+      await this.enqueueNotificationJob(cached);
+      return;
+    }
+
+    // Step 2: Fallback to DB
     const now = new Date();
     const overdueTasks = await this.tasksRepository.find({
       where: {
@@ -35,27 +47,30 @@ export class OverdueTasksService {
       return;
     }
 
-    this.logger.log(`⚠️ Found ${overdueTasks.length} overdue tasks.`);
+    this.logger.log(`⚠️ Found ${overdueTasks.length} overdue tasks (from DB).`);
 
+    // Step 3: Save to cache
+    await this.cacheService.set(this.cacheKey, overdueTasks, 600); // cache for 10 minutes
+
+    await this.enqueueNotificationJob(overdueTasks);
+  }
+
+  private async enqueueNotificationJob(tasks: Task[]) {
     try {
-      // Push a single batch job to process all
-      await this.taskQueue.add('overdue-tasks-notification', {
-        taskIds: overdueTasks.map((task) => task.id),
-      }, {
-        attempts: 3, // Retry failed jobs up to 3 times
-        backoff: {
-          type: 'exponential',
-          delay: 1000,
-        },
-        removeOnComplete: true,
-        removeOnFail: false,
-      });
-
+      await this.taskQueue.add(
+        'overdue-tasks-notification',
+        { taskIds: tasks.map((task) => task.id) },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
+          removeOnComplete: true,
+          removeOnFail: false,
+        }
+      );
       this.logger.log('📩 Enqueued overdue task notification job');
     } catch (err) {
-      this.logger.error(`❌ Failed to enqueue overdue tasks: ${err instanceof Error ? err.message : err}`);
+      const error = err instanceof Error ? err.message : String(err);
+      this.logger.error(`❌ Failed to enqueue overdue tasks: ${error}`);
     }
-
-    this.logger.debug('✅ Overdue tasks check completed');
   }
 }
