@@ -10,6 +10,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TaskProcessorModule } from './queues/task-processor/task-processor.module';
 import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.module';
 import { CacheService } from './common/services/cache.service';
+import { RedisProvider } from '@common/providers/redis.provider';
+import { TestingModule } from '@modules/testing/testing.module';
+
 
 @Module({
   imports: [
@@ -70,16 +73,15 @@ import { CacheService } from './common/services/cache.service';
     // Queue processing modules
     TaskProcessorModule,
     ScheduledTasksModule,
+    TestingModule
   ],
   providers: [
-    // Inefficient: Global cache service with no configuration options
-    // This creates a single in-memory cache instance shared across all modules
-    CacheService
+    CacheService,
+    RedisProvider
   ],
   exports: [
-    // Exporting the cache service makes it available to other modules
-    // but creates tight coupling
-    CacheService
+    CacheService,
+    RedisProvider
   ]
 })
 export class AppModule {} 

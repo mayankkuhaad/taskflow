@@ -1,11 +1,44 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsUUID, IsString, IsDateString } from 'class-validator';
 import { TaskStatus } from '../enums/task-status.enum';
 import { TaskPriority } from '../enums/task-priority.enum';
 
-// TODO: Implement task filtering DTO
-// This DTO should be used to filter tasks by status, priority, etc.
 export class TaskFilterDto {
-  // TODO: Add properties for filtering tasks
-  // Example: status, priority, userId, search query, date ranges, etc.
-  // Add appropriate decorators for validation and Swagger documentation
-} 
+  @ApiPropertyOptional({ enum: TaskStatus })
+  @IsEnum(TaskStatus)
+  @IsOptional()
+  status?: TaskStatus;
+
+  @ApiPropertyOptional({ enum: TaskPriority })
+  @IsEnum(TaskPriority)
+  @IsOptional()
+  priority?: TaskPriority;
+
+  @ApiPropertyOptional()
+  @IsUUID()
+  @IsOptional()
+  userId?: string; // Used only by admin perhaps
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  dueDateBefore?: Date;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  dueDateAfter?: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  page?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  limit?: number;
+}
