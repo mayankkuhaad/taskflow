@@ -5,6 +5,7 @@ import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 import { Task } from './entities/task.entity';
 import { SharedModule } from '@common/shared.module';
+import { TaskProcessorService } from '@queues/task-processor/task-processor.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { SharedModule } from '@common/shared.module';
     SharedModule
   ],
   controllers: [TasksController],
-  providers: [TasksService],
+  providers: [TasksService, TaskProcessorService],
   exports: [TasksService],
 })
 export class TasksModule {} 

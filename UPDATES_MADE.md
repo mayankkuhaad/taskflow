@@ -225,6 +225,7 @@ Services are now deterministic and easily testable.
 
 Clean separation between controller logic (access control, formatting) and service logic (persistence, validation).
 
+--------------------------------------------------------------------------------------------
 
 ### Tasks Module Enhancements
 🧠 Summary
@@ -309,4 +310,49 @@ toTaskResponseDto() used to format task entities cleanly.
 Used global HttpExceptionFilter for consistent error responses.
 
 Custom error messages used instead of raw database errors or stack traces.
+
+--------------------------------------------------------------------------------------------
+
+### CACHE SERVICE
+
+Added Overdue Tasks Processing via BullMQ & Scheduled Jobs
+
+Created OverdueTasksService
+
+Scheduled with @Cron (every hour) to check for overdue tasks.
+
+First attempts to retrieve from cache (CacheService).
+
+Falls back to DB query if cache is empty.
+
+Enqueues notification jobs for overdue tasks via BullMQ (task-processing queue).
+
+Enhanced TaskProcessorService
+
+Handles multiple job types via BullMQ Worker:
+
+task-status-update: Updates task status using TasksService.
+
+overdue-tasks-notification: Fetches and sends overdue task notifications to assignees.
+
+Added robust logging and validation for each job type.
+
+Introduced a synthetic SYSTEM_USER to use for system-initiated updates.
+
+Dependencies:
+
+Injected TasksService into TaskProcessorService.
+
+Injected CacheService and TasksRepository into OverdueTasksService.
+
+Registered task-processing queue via BullMQ.
+
+### ✅ Common Module Enhancements
+
+- **HttpExceptionFilter**: Added global error logging with structured response format.
+- **RateLimitGuard**: Rate limiting per-IP using Redis and `@RateLimit()` decorator.
+- **LoggingInterceptor**: Unified logging for requests and responses, with redacted sensitive data.
+- **ValidationPipe**: Strong DTO validation using class-validator (global via `main.ts`).
+- **CacheService**: Custom wrapper for Redis with namespacing, error safety, and logging.
+- **CommonModule**: New module to bundle all shared services, interceptors, guards, and filters.
 
